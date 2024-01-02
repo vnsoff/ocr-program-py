@@ -10,8 +10,7 @@ def index():
 @app.route('/api/data', methods=['GET'])
 def get_data():
     data = [
-        {"id": 1, "name": "John Doe", "email": "john@example.com"},
-        {"id": 2, "name": "Jane Doe", "email": "jane@example.com"}
+        {"name": "Nome da Pessoa", "document": "839.107.090-52", "birthdate": "03/08/1999"},
     ]
     return jsonify(data)
 
