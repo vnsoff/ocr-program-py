@@ -43,6 +43,19 @@
             ':35729/livereload.js?snipver=1"></' +
             'script>');
         
+        document.addEventListener("DOMContentLoaded", function () {
+            // Fetch data from the backend (adjust the URL accordingly)
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    // Fill in the form fields with the received data
+                    document.getElementById("name").value = data[0].name;
+                    document.getElementById("document").value = data[0].document;
+                    document.getElementById("birthdate").value = data[0].birthdate;
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        });
+
         function enableEditing() {
             const form = document.getElementById("editForm");
             if (form) {
