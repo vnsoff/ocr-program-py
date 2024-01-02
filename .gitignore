@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+venv/
+
+# Environment variables
+.env
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Node.js
+node_modules/
+
+# Compiled JavaScript
+static/js/*.js
+
+# Compiled CSS
+static/css/*.css
+
+# Flask
+*.pyc
+__pycache__/
+instance/
