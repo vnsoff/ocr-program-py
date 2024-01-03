@@ -9,7 +9,10 @@
 
 <body class="font-sans">
     <div class="w-full max-w-xs">
-        <form id="editForm" class="hidden bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <div class="flex items-center justify-between px-8 pt-6 mb-4">
+        <h3>Data Extracted</h3>
+      </div>
+        <form id="editForm" class="hidden bg-white px-8 pt-6 pb-8 mb-4">
           <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
               Name
@@ -34,6 +37,11 @@
             </button>
           </div>
         </form>
+      </div>
+      <div class="w-full max-w-xs">
+      <div class="flex items-center justify-between px-8 pt-6 pb-8 mb-4">
+        <button type="button" onclick="processImage()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Process Image</button>
+      </div>
       </div>
 
     <script src="../static/js/app.js"></script>

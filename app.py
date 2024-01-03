@@ -4,11 +4,27 @@ from waitress import serve
 import pytesseract
 import re
 import logging
+import signal
+import os
+import sys
+import time
+
 
 app = Flask(__name__)
 
-# Set the logging level to DEBUG
 app.logger.setLevel(logging.DEBUG)
+
+# Restart server
+def restart_server(signum, frame):
+    print("Restarting server...")
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+if __name__ == '__main__':
+    serve(app, host='0.0.0.0', port=5000)
+
+    signal.signal(signal.SIGHUP, restart_server)
+
+    app.run(debug=True)
 
 @app.route('/')
 def index():
@@ -22,20 +38,36 @@ def get_data():
     return jsonify(data)
 
 @app.route('/process_image', methods=['POST'])
+
 def process_image():
+    
     print('Processing image...')
+
+    uploaded_image = request.files['image']
+    start_time = time.time()
+
+    image_path = 'images/image1.png'
+    uploaded_image.save(image_path)
 
     if 'image' not in request.files:
         print('No image provided')
         return jsonify({'error': 'No image provided'})
 
-    uploaded_image = request.files['image']
+    try:
+        extracted_text = pytesseract.image_to_string(Image.open(image_path))
+    except Exception as e:
+        app.logger.error(f"Error during OCR: {e}")
+        return jsonify({'error': 'Error during OCR'})
 
-    image_path = 'images/image1.png'
-    uploaded_image.save(image_path)
-
-    extracted_text = pytesseract.image_to_string(Image.open(image_path))
     app.logger.info(f"Extracted Text: {extracted_text}")
+
+    if not extracted_text.strip():
+        app.logger.error("OCR did not recognize any text in the image.")
+        return jsonify({'error': 'No text recognized'})
+
+    end_time = time.time()
+    processing_time = end_time - start_time
+    print(f"Processing time: {processing_time} seconds")
 
     name = extract_name(extracted_text)
     app.logger.info(f"Extracted Name: {name}")
@@ -68,4 +100,3 @@ def extract_document(text):
 
 if __name__ == '__main__':
     serve(app, host='0.0.0.0', port=5000)
-    app.run(debug=True)
