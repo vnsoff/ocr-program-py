@@ -1,7 +1,7 @@
 from PIL import Image
 from flask import Flask, render_template, request, jsonify
 from waitress import serve
-import pytesseract
+import tesserocr
 import re
 import logging
 import signal
@@ -40,37 +40,26 @@ def get_data():
 @app.route('/process_image', methods=['POST'])
 
 def process_image():
-    
-    print('Processing image...')
-
-    uploaded_image = request.files['image']
+    app.logger.info('Processing image...')
     start_time = time.time()
 
+    if 'image' not in request.files:
+        app.logger.error('No image provided')
+        return jsonify({'error': 'No image provided'})
+
+    uploaded_image = request.files['image']
     image_path = 'images/image1.png'
     uploaded_image.save(image_path)
 
-    if 'image' not in request.files:
-        print('No image provided')
-        return jsonify({'error': 'No image provided'})
-
     try:
-        # OCR engine mode, page segmentation mode, and language specified
-        custom_config = r'--oem 3 --psm 6 -l por'
-        extracted_text = pytesseract.image_to_string(Image.open(image_path), config=custom_config)
+        with tesserocr.PyTessBaseAPI(lang='por') as api:
+            api.SetImageFile(image_path)
+            extracted_text = api.GetUTF8Text()
     except Exception as e:
         app.logger.error(f"Error during OCR: {e}")
         return jsonify({'error': 'Error during OCR'})
 
-
     app.logger.info(f"Extracted Text: {extracted_text}")
-
-    if not extracted_text.strip():
-        app.logger.error("OCR did not recognize any text in the image.")
-        return jsonify({'error': 'No text recognized'})
-
-    end_time = time.time()
-    processing_time = end_time - start_time
-    print(f"Processing time: {processing_time} seconds")
 
     name = extract_name(extracted_text)
     app.logger.info(f"Extracted Name: {name}")
@@ -80,6 +69,10 @@ def process_image():
 
     document = extract_document(extracted_text)
     app.logger.info(f"Extracted Document: {document}")
+
+    end_time = time.time()
+    processing_time = end_time - start_time
+    app.logger.info(f"Processing time: {processing_time} seconds")
 
     return jsonify({'document': document, 'name': name, 'birthdate': birthdate})
 
