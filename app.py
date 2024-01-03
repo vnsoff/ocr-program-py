@@ -54,10 +54,13 @@ def process_image():
         return jsonify({'error': 'No image provided'})
 
     try:
-        extracted_text = pytesseract.image_to_string(Image.open(image_path))
+        # OCR engine mode, page segmentation mode, and language specified
+        custom_config = r'--oem 3 --psm 6 -l por'
+        extracted_text = pytesseract.image_to_string(Image.open(image_path), config=custom_config)
     except Exception as e:
         app.logger.error(f"Error during OCR: {e}")
         return jsonify({'error': 'Error during OCR'})
+
 
     app.logger.info(f"Extracted Text: {extracted_text}")
 
