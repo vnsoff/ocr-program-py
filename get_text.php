@@ -1,15 +1,15 @@
 <?php
 
-require 'vendor/autoload.php'; // Inclua o autoloader do Composer
+require 'vendor/autoload.php'; // Include Composer autoloader
 
 use thiagoalessio\TesseractOCR\TesseractOCR;
 
-// Definir constantes
+// Constants
 define('TESSERACT_EXECUTABLE_PATH', 'C:\Program Files\Tesseract-OCR\tesseract.exe');
 define('TXT_DIRECTORY', 'txt/');
 define('TXT_FILE_PREFIX', 'txt_');
+define('IMAGE_DIRECTORY', 'images/');
 
-// Função para gerar o nome do arquivo TXT
 function generateTxtFilename($directory, $prefix) {
     $nextFileNumber = 1;
     while (file_exists($directory . $prefix . $nextFileNumber . '.txt')) {
@@ -18,38 +18,64 @@ function generateTxtFilename($directory, $prefix) {
     return $directory . $prefix . $nextFileNumber . '.txt';
 }
 
-// Verificar se a solicitação é do tipo POST
+function processPNG($pngFilePath) {
+    // Use TesseractOCR to perform OCR on PNG file
+    $tesseract = new TesseractOCR($pngFilePath);
+    $tesseract->executable(TESSERACT_EXECUTABLE_PATH);
+    return $tesseract->run();
+}
+
+function searchTextInFile($filename, $searchText) {
+    $fileContents = file_get_contents($filename);
+    return strpos($fileContents, $searchText) !== false;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verificar se um arquivo de imagem foi enviado com sucesso
-    if (isset($_FILES['imageFile']) && $_FILES['imageFile']['error'] === UPLOAD_ERR_OK) {
-        $imageFilePath = $_FILES['imageFile']['tmp_name'];
+    if (isset($_FILES['pdfFile']) && $_FILES['pdfFile']['error'] === UPLOAD_ERR_OK) {
+        $pdfFilePath = $_FILES['pdfFile']['tmp_name'];
 
-        // Instanciar o TesseractOCR
-        $tesseract = new TesseractOCR($imageFilePath);
-        // Definir o idioma para português (opcional)
-        $tesseract->lang('por'); 
-        // Especificar o caminho do executável do Tesseract
-        $tesseract->executable(TESSERACT_EXECUTABLE_PATH);
+        if (!file_exists(IMAGE_DIRECTORY)) {
+            mkdir(IMAGE_DIRECTORY, 0777, true);
+        }
 
-        // Executar OCR na imagem
-        $text = $tesseract->run();
+        $output = null;
+        $returnVar = null;
+        exec("gs -dNOPAUSE -dBATCH -sDEVICE=pngalpha -r300 -sOutputFile=" . IMAGE_DIRECTORY . "page-%d.png $pdfFilePath", $output, $returnVar);
 
-        // Gerar o nome do arquivo TXT
+        if ($returnVar !== 0) {
+            echo 'Error executing Ghostscript command.';
+            exit;
+        }
+
+        $extractedText = '';
+        $pngFiles = glob(IMAGE_DIRECTORY . '*.png');
+        foreach ($pngFiles as $pngFile) {
+            $extractedText .= processPNG($pngFile);
+        }
+
         $txtFilename = generateTxtFilename(TXT_DIRECTORY, TXT_FILE_PREFIX);
 
-        // Salvar o texto extraído no arquivo TXT
-        if (file_put_contents($txtFilename, $text) !== false) {
-            // Exibir uma mensagem de sucesso
-            echo 'Texto extraído e salvo com sucesso em: ' . $txtFilename;
+        if (file_put_contents($txtFilename, $extractedText) !== false) {
+            echo 'Text extracted and saved successfully to: ' . $txtFilename;
+
+            $searchText = isset($_POST['searchText']) ? $_POST['searchText'] : '';
+            $searchResults = [];
+            foreach ($pngFiles as $pngFile) {
+                if (searchTextInFile($pngFile, $searchText)) {
+                    $searchResults[] = $pngFile;
+                }
+            }
+
+            echo '<script>';
+            echo 'var searchResults = ' . json_encode($searchResults) . ';';
+            echo 'var searchText = ' . json_encode($searchText) . ';';
+            echo '</script>';
         } else {
-            // Exibir uma mensagem de erro em caso de falha ao salvar o arquivo
-            echo 'Erro ao salvar o arquivo de texto.';
+            echo 'Error saving text file.';
         }
     } else {
-        // Exibir uma mensagem de erro se houver problemas com o arquivo enviado
-        echo 'Erro ao fazer upload do arquivo.';
+        echo 'Error uploading file.';
     }
 } else {
-    // Exibir uma mensagem de erro se a solicitação não for do tipo POST
-    echo 'Método de solicitação inválido.';
+    echo 'Invalid request method.';
 }

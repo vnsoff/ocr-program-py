@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Text</title>
+    <style>
+        .successMessage {
+            color: green;
+            display: none;
+        }
+        .errorMessage {
+            color: red;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<h1>Search Text in Converted PDF</h1>
+<form action="get_text.php" method="post" enctype="multipart/form-data" onsubmit="showSuccessMessage(event)">
+    <label for="pdfFile">Upload PDF:</label>
+    <input type="file" name="pdfFile" id="pdfFile" accept=".pdf" required>
+    <br>
+    <label for="searchText">Enter text to search:</label>
+    <input type="text" name="searchText" id="searchText" required>
+    <br>
+    <button type="submit">Search</button>
+</form>
+<div id="successMessage" class="successMessage">Files submitted successfully!</div>
+<div id="errorMessage" class="errorMessage">Error: Please select a PDF file.</div>
+<script>
+    function showSuccessMessage(event) {
+        const pdfFile = document.getElementById("pdfFile").files[0];
+
+        if (!pdfFile) {
+            document.getElementById("errorMessage").style.display = "block";
+            event.preventDefault();
+            return;
+        }
+
+        document.getElementById("successMessage").style.display = "block";
+    }
+</script>
+</body>
+</html>
